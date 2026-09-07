@@ -1,1 +1,1 @@
-# T300 Backend Training 2026
+## OpenTelemetry Assignment
