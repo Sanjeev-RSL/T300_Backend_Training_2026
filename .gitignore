@@ -1,0 +1,5 @@
+.vscode/
+.idea/
+*.jar
+opentelemetry-javaagent.jar
+app.log
