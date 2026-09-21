@@ -30,21 +30,45 @@ const PROXY_PORT = 3000;
 const BACKENDS = ["http://localhost:4001", "http://localhost:4002"];
 
 // ---------------------------------------------------------------------
-// TODO: Round-robin backend selection
+// Round-robin backend selection
 // ---------------------------------------------------------------------
+let currentIndex = 0;
+
 function pickBackend() {
-  throw new Error("pickBackend() is not implemented yet");
+  const backend = BACKENDS[currentIndex % BACKENDS.length];
+  currentIndex++;
+  return backend;
 }
 
 // ---------------------------------------------------------------------
-// TODO: Token bucket rate limiting
+// Token bucket rate limiting
 // ---------------------------------------------------------------------
-// Requirements: burst capacity of 5 requests per client (each client's
-// bucket starts full with 5 tokens; max capacity is also 5), refilling
-// at 1 request/second. Return true if the request should be allowed,
-// false if it should be blocked.
+// Burst capacity: 5 requests per client (bucket starts full, max 5).
+// Refill rate: 1 token/second. Returns true = allow, false = block (429).
+const buckets = new Map();
+const BUCKET_CAPACITY = 5;
+const REFILL_RATE = 1; // tokens per second
+
 function isAllowed(clientId) {
-  throw new Error("isAllowed() is not implemented yet");
+  const now = Date.now();
+
+  if (!buckets.has(clientId)) {
+    // New client — start with a full bucket
+    buckets.set(clientId, { tokens: BUCKET_CAPACITY, lastRefill: now });
+  }
+
+  const bucket = buckets.get(clientId);
+
+  // Refill tokens proportional to elapsed time
+  const elapsed = (now - bucket.lastRefill) / 1000; // convert ms -> seconds
+  bucket.tokens = Math.min(BUCKET_CAPACITY, bucket.tokens + elapsed * REFILL_RATE);
+  bucket.lastRefill = now;
+
+  if (bucket.tokens >= 1) {
+    bucket.tokens -= 1;
+    return true;  // request allowed
+  }
+  return false;   // bucket empty — block with 429
 }
 
 // ---------------------------------------------------------------------
